@@ -1,0 +1,26 @@
+{
+    "circle_detection": {
+        "radius_lower_estimate": 30,
+        "threshold": 0.4,
+        "channel_selection": "all",
+        "inverse_threshold": false,
+        "area_thresholds": [0.3, 16.0],
+        "average_area_threshold": 6.0,
+        "eccentricity_threshold": 10.0
+    },
+    "pattern_detection": {
+        "num_points": [17, 11],
+        "spacing": [50, 50]
+    },
+    "model": {
+        "focal_length_estimate": 2.8,
+        "pixel_pitch": 2.8e-3,
+        "fix_k":[false, false, false, true, true, true],
+        "fix_center": false
+    },
+    "num_trials": 4,
+    "show_images": false,
+    "verbose": false,
+    "bootstrap_ratio": 0.75,
+    "bootstrap_rounds": 10
+}
