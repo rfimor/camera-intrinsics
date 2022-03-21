@@ -28,7 +28,7 @@ def find_images(folder_or_pattern):
 
 def get_char():
     if is_windows:
-        ch = msvcrt.getch()
+        ch = msvcrt.getch().decode("utf-8")
     else:
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)

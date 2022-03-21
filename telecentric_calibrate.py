@@ -155,7 +155,8 @@ def calibrate_cam(image_files, cfg):
                 rep_ctrs = (np.einsum('ij, kj', mtx, homo_wp).T)[:,:2]
                 err = rep_error(ctrs, rep_ctrs)
             except Exception as ex:
-                print(f'Error occuredred: {ex}')
+                print(f'Error occuredred when processing {img_name}')
+                print(ex)
                 ctrs = None
             return ctrs, homo_wp, mtx, err, num
          
@@ -292,7 +293,7 @@ def calibrate_cam(image_files, cfg):
             'init_error': err0,
             'principal_point': p0, 
             'distortion': k
-            }
+            }, quit_now
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
@@ -319,12 +320,14 @@ if __name__ == '__main__':
     
     signal.signal(signal.SIGINT, signal_handler)
     
+    quit_now = False
     for ii in range(n_round):
-        if call_off:
+        if call_off or quit_now:
             break
         print('Round {}'.format(ii))
         idx = np.random.choice(len(s_names), n_img, replace=False)
-        results.append(calibrate_cam([s_names[i] for i in idx], cfg))
+        r, quit_now = calibrate_cam([s_names[i] for i in idx], cfg)
+        results.append(r)
         print()
     
     mean, std = stat_dict(results)

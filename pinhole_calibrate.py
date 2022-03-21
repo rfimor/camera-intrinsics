@@ -154,7 +154,7 @@ def calibrate_cam(image_files, cfg):
             try:
                 ctrs, num = find_centers(img, cfg)
             except Exception as ex:
-                print('Error occuredred.')
+                print(f'Error occuredred when processing {img_name}')
                 print(ex)
                 ctrs = None
                 num = 0
@@ -299,7 +299,7 @@ def calibrate_cam(image_files, cfg):
             'principal_point': pp,
             'aspect_ratio': ap,
             'spherical_distortion': ks,
-            'spherical_err': sph_err}
+            'spherical_err': sph_err}, quit_now
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
@@ -326,12 +326,14 @@ if __name__ == '__main__':
     
     signal.signal(signal.SIGINT, signal_handler)
 
+    quit_now = False
     for ii in range(n_round):
-        if call_off:
+        if call_off or quit_now:
             break
         print('Round {}'.format(ii))
         idx = np.random.choice(len(s_names), n_img, replace=False)
-        results.append(calibrate_cam([s_names[i] for i in idx], cfg))
+        r, quit_now = calibrate_cam([s_names[i] for i in idx], cfg)
+        results.append(r)
     
     mean, std = stat_dict(results)
     
