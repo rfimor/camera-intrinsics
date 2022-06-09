@@ -1,7 +1,7 @@
 {
     "circle_detection": {
         "radius_lower_estimate": 20,
-        "threshold": 0.4,
+        "threshold": 0.33,
         "channel_selection": "all",
         "inverse_threshold": false,
         "area_thresholds": [0.2, 16.0],
