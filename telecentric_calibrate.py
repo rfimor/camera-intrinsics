@@ -341,11 +341,13 @@ if __name__ == '__main__':
     print('Principal point is {} +- {}'.format(mean['principal_point'], std['principal_point']))
    
     if args.save is not None:
-        pickle.dump({'matrix': mean['matrix'], 
-                    'distortion': mean['distortion'],
-                    'matrix_std': std['matrix'],
-                    'distortion_std': std['distortion'],
-                    'principal_point': mean['principal_point'],
-                    'principal_point_std': std['principal_point']}, 
-                    args.save)
+        with open(args.save, "wb") as f:
+            pickle.dump({
+                'matrix': mean['matrix'], 
+                'distortion': mean['distortion'],
+                'matrix_std': std['matrix'],
+                'distortion_std': std['distortion'],
+                'principal_point': mean['principal_point'],
+                'principal_point_std': std['principal_point']
+            }, f)
 
