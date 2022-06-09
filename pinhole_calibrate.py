@@ -352,11 +352,13 @@ if __name__ == '__main__':
     print('spherical reprojection error is {} +- {}'.format(mean['spherical_err'], std['spherical_err']))
 
     if args.save is not None:
-        pickle.dump({'matrix': mean['matrix'], 
-                    'distortion': mean['distortion'],
-                    'matrix_std': std['matrix'],
-                    'distortion_std': std['distortion']}, 
-                    args.save)
+        with open(args.save, "wb") as f:
+            pickle.dump({
+                'matrix': mean['matrix'], 
+                'distortion': mean['distortion'],
+                'matrix_std': std['matrix'],
+                'distortion_std': std['distortion']
+            }, f)
 
 
 
