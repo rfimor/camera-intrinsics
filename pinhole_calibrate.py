@@ -9,6 +9,7 @@ import signal
 import atexit
 from typing import Tuple, List
 from skimage.io import imread
+from skimage.color import rgba2rgb
 from scipy.optimize import least_squares
 
 from utils import get_char, stat_dict, find_images
@@ -143,12 +144,15 @@ def calibrate_cam(image_files, cfg):
         
         if verbose: print('Processing ' + img_name)
         img = imread(img_name)
+
+        if len(img.shape) == 3 and img.shape[2] == 4:
+            img = rgba2rgb(img)
             
         if img_size is None:
             img_size = img.shape
         else:
             if img.shape != img_size:
-                raise Exception('Imcompatible image size')
+                raise Exception('Incompatible image size')
 
         def work_func():
             try:
