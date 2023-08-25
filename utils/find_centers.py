@@ -39,9 +39,13 @@ def threshold_image(img, detect_conf):
 
     is_adaptive = detect_conf.adaptive_threshold
     is_inv = detect_conf.inverse_threshold
+    
     threshold = detect_conf.threshold
     if threshold is not None and threshold < 1:
         threshold *= np.max(img)
+        
+    if threshold is not None:
+        img[img<threshold] = 255 if is_inv else 0 
     
     if threshold is None:
         bin_opt = cv2.THRESH_BINARY_INV if is_inv else cv2.THRESH_BINARY
@@ -50,7 +54,6 @@ def threshold_image(img, detect_conf):
         else:
             _, img = cv2.threshold(img, 0, 255,  bin_opt + cv2.THRESH_OTSU)
     else:
-        img[img<threshold] = 255 if is_inv else 0 
         img[img>=threshold] = 0 if is_inv else 255
 
     return img
@@ -91,7 +94,7 @@ def find_ellipses(clist, detect_conf):
 
     return ellipses
 
-def find_coutours(img, detect_conf):
+def find_coutours(img, detect_conf, show=False):
     open_k = int(detect_conf.open_kernel * detect_conf.radius_lower_estimate) if detect_conf.open_kernel is not None else 2
     close_k = int(detect_conf.close_kernel * detect_conf.radius_lower_estimate) if detect_conf.close_kernel is not None else 2
 
@@ -112,25 +115,27 @@ def find_coutours(img, detect_conf):
     else:
         pad_img = img
 
-    #plt.imshow(pad_img, cmap='gray')
-    #plt.show()
+    if show:
+        plt.imshow(pad_img, cmap='gray')
+        plt.show()
 
     #tmp_img, clist, hierachy = cv2.findContours(pad_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
     clist, _ = cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
     return pad_img, clist
 
-def find_ellipses_direct(u_img, detect_conf):
-    _, clist = find_coutours(u_img, detect_conf)
+def find_ellipses_direct(u_img, detect_conf, show=False):
+    _, clist = find_coutours(u_img, detect_conf, show=show)
     ellipses = find_ellipses(clist, detect_conf)
     for x in ellipses:
         x['center'] = np.array(x['center']) - np.array([PAD_WID, PAD_WID])
     
-    #ctrs = list(map(lambda x: tuple(np.array(x['center'])), ellipses))
-    #print(ctrs)
-    #x, y = zip(*ctrs)
-    #plt.plot(x, y, '-o')
-    #plt.show()
+    if show:
+        ctrs = list(map(lambda x: tuple(np.array(x['center'])), ellipses))
+        #print(ctrs)
+        x, y = zip(*ctrs)
+        plt.scatter(x, y)
+        plt.show()
 
     return ellipses
 
@@ -327,7 +332,7 @@ def find_centers(f_img, config):
     img = normalize_image(f_img, config.circle_detection.channel_selection)
     img = threshold_image(img, config.circle_detection)
 
-    ellipses = find_ellipses_direct(img, config.circle_detection)
+    ellipses = find_ellipses_direct(img, config.circle_detection, show=config.show_images)
     ctrs = list(map(lambda x: np.array(x['center']), ellipses))
     dist_mat = find_distances(ctrs, num_neighbors=8)
 

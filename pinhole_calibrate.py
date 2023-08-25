@@ -310,6 +310,7 @@ if __name__ == '__main__':
     p.add_argument("images", metavar='calibration images', help="path to calibration images")
     p.add_argument("-c", "--config", dest="config", metavar='', help="configuration file", required=True)
     p.add_argument("-o", "--out", dest="save", metavar='', help="save results to this pickel file", required=False)
+    p.add_argument("--show", dest="show", action='store_true', help="show visualization", required=False)
 
     if len(sys.argv) == 1:
         sys.argv.append("-h")
@@ -323,6 +324,7 @@ if __name__ == '__main__':
     cfg = CalibrationConfig()
     cfg.read_config(args.config)
     cfg.world_points = cfg.auto_points()
+    cfg.show_images = args.show
 
     results = []
     n_round = cfg.bootstrap_rounds
