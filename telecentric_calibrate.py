@@ -34,12 +34,12 @@ def distotion_map(img_pts, img_size, p0, k):
     for ii in range(len(k)):
         delta[:] = delta[:] + k[ii] * accu[:]
         accu[:] = accu[:] * r_vec[:]
-    
+
     map_pts = np.empty(img_pts.shape)
-    
+
     map_pts[:, 0] = (img_pts[:, 0] - p0[0]) * delta[:] + p0[0]
     map_pts[:, 1] = (img_pts[:, 1] - p0[1]) * delta[:] + p0[1]
-    
+
     return map_pts
 
 def reproject(wld_pts, S, R, t, p0, k, img_size):
@@ -65,15 +65,15 @@ def pars2x(S, p0, k, R_mat, t_vec, cfg):
         t = t_vec[ii]
         pars.extend([R[0,0], R[0,1], R[1,0], R[1,1], t[0], t[1]])
     return np.array(pars)
-    
+
 def x2pars(pars, cfg):
     S = np.zeros((2,2), dtype=float)
     p0 = None
     k = []
-    
+
     S[0,0], S[0,1], S[1,1] = pars[0:3]
     cnt = 3
-    
+
     if not cfg.model.fix_center:
         p0 = [pars[3], pars[4]]
         cnt = 5
@@ -82,7 +82,7 @@ def x2pars(pars, cfg):
         if not cfg.model.fix_k[ii]:
             k.append(pars[cnt+ii])
             cnt += 1
-    
+
     R_mat = []
     t_vec = []
     for ii in range(cnt, len(pars), 6):
@@ -93,7 +93,7 @@ def x2pars(pars, cfg):
         t_vec.append(t)
 
     return S, p0, k, R_mat, t_vec
-    
+
 def reproject_error(wld_pts, img_pts, pars, img_size, cfg):
     S, p0, k, R_mat, t_vec = x2pars(pars, cfg)
     err = []
@@ -101,14 +101,14 @@ def reproject_error(wld_pts, img_pts, pars, img_size, cfg):
         rep_pts = reproject(wld_pts, S, R_mat[ii], t_vec[ii], p0, k, img_size)
         err.append(img_pts[ii] - rep_pts)
     return np.array(err).ravel()
-    
+
 def rep_error(ctrs, rep_ctrs):
     diff = rep_ctrs - ctrs
     return np.sqrt(np.mean(diff * diff))
 
 def calibrate_cam(image_files, cfg):
     global call_off
-    
+
     np.set_printoptions(precision=3)
 
     img_points = []
@@ -122,17 +122,17 @@ def calibrate_cam(image_files, cfg):
     verbose = cfg.verbose
 
     err_list = []
-                
+
     for img_name in image_files:
         if quit_now:
             break
-        
+
         if cfg.verbose:
             print('Processing ' + img_name)
         img = imread(img_name)
         if len(img.shape) == 3 and img.shape[2] == 4:
             img = rgba2rgb(img)
-                    
+
         if img_size is None:
             img_size = img.shape[:2][::-1]
             width, height = img_size
@@ -142,7 +142,7 @@ def calibrate_cam(image_files, cfg):
         else:
             if img.shape[:2][::-1] != img_size:
                 raise Exception('Incompatible image size')
-        
+
         order = 0
         def work_func():
             mtx = None
@@ -162,20 +162,20 @@ def calibrate_cam(image_files, cfg):
                 print(ex)
                 ctrs = None
             return ctrs, homo_wp, mtx, err, num
-         
+
         ctrs, homo_wp, mtx, err, num = work_func()
-      
+
         c = 'n'
         acpt = True
         quit_now = False
-        
+
         if call_off: break
-        
+
         if cfg.show_images:
             while(True):
                 print('Command: "r" to retry, "a" to accept, "e" to exclude, "q" to stop')
                 c = get_char().lower()
-        
+
                 if c == 'r':
                     print('Retry ...')
                     order += 1
@@ -204,7 +204,7 @@ def calibrate_cam(image_files, cfg):
                     else:
                         print('Error {} is too large. Retry ...'.format(err))
                     ctrs, homo_wp, mtx, err, num = work_func()                    
-    
+
         if acpt and not ctrs is None:
             img_points.append(ctrs)
             world_points.append(cfg.auto_points(num[1], num[0]))
@@ -214,7 +214,7 @@ def calibrate_cam(image_files, cfg):
                 print("Reprojection error is: {}".format(err))
             H_matrix.append(mtx)
             err_list.append(err)
-             
+
         if verbose: print(' ')
 
     if len(img_points) < 4:
@@ -224,9 +224,9 @@ def calibrate_cam(image_files, cfg):
         print('{} images processed out of {} in total'.format(len(img_points), len(image_files)))
         if verbose:
             print('Image size is {}'.format(img_size))
-    
+
     if verbose: print('Start calibration:')
-    
+
     G = []
     for ii in range(len(H_matrix)):
         H = H_matrix[ii]
@@ -241,15 +241,15 @@ def calibrate_cam(image_files, cfg):
     #print(G)
     #print(b)
     #print(np.matmul(G, b))
-    
+
     B = np.linalg.inv(np.array([[b[0], b[1]], [b[1], b[2]]]))
     #print(B)
     #print(b[0]*b[2] - b[1]*b[1])
     #print(b[3])
-    
+
     S = np.linalg.cholesky(B).T
     S_inv = np.linalg.inv(S)
-            
+
     if verbose:
         print('Initial camera matrix is')
         print(S)
@@ -258,27 +258,27 @@ def calibrate_cam(image_files, cfg):
 
     R_matrix = list(map(lambda H: np.matmul(S_inv, H[:2,:2]), H_matrix))
     t_vec = list(map(lambda H: np.matmul(S_inv, H[:2,2]), H_matrix))
-    
+
     err_list = np.array(err_list)
     err0 = np.mean(err_list)
     if verbose:
         print('Before nonlinear fit, reprojection error is {}+-{}'.format(err0, np.std(err_list)))
-    
+
     pars_init = pars2x(S, img_ctr, [0], R_matrix, t_vec, cfg)
     err_func = lambda x: reproject_error(homo_wp, img_points, x, img_size, cfg)
-    
+
     if verbose:
         print('Start least square fit ...')
     rslt = least_squares(err_func, pars_init, verbose=1 if verbose else 0)
 
     S, p0, k, R_matrix, t_vec = x2pars(rslt.x, cfg)
-    
+
     print('Final camera matrix is')
     print(S)
-        
+
     if p0 is None: p0 = np.array([cx, cy])
     print('Principal point is: ({}, {})'.format(p0[0], p0[1]))
-        
+
     print('Distotion vector is {}'.format(k))
 
     err_list = []
@@ -320,9 +320,9 @@ if __name__ == '__main__':
     results = []
     n_round = cfg.bootstrap_rounds
     n_img = int(round(cfg.bootstrap_ratio * len(s_names)))
-    
+
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     quit_now = False
     for ii in range(n_round):
         if call_off or quit_now:
@@ -332,7 +332,7 @@ if __name__ == '__main__':
         r, quit_now = calibrate_cam([s_names[i] for i in idx], cfg)
         results.append(r)
         print()
-    
+
     mean, std = stat_dict(results)
 
     print(' ')
@@ -342,7 +342,7 @@ if __name__ == '__main__':
     print('Initial camera intrinsics are:\n {}  \n+-\n {}'.format(mean['init_matrix'], std['init_matrix']))
     print('Distortion vector is:\n {} \n+-\n {}'.format(mean['distortion'], std['distortion']))
     print('Principal point is {} +- {}'.format(mean['principal_point'], std['principal_point']))
-   
+
     if args.save is not None:
         with open(args.save, "wb") as f:
             pickle.dump({
@@ -353,4 +353,3 @@ if __name__ == '__main__':
                 'principal_point': mean['principal_point'],
                 'principal_point_std': std['principal_point']
             }, f)
-
