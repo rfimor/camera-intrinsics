@@ -177,6 +177,7 @@ def calibrate_cam(image_files, cfg):
     verbose = cfg.verbose
 
     def work_func(img, img_name):
+        nonlocal cfg
         try:
             ctrs, num = find_centers(img, cfg)
         except Exception as ex:
